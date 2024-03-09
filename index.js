@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 const morgan = require('morgan')
 const cors = require('cors')
+const mongoose = require('mongoose')
 
 morgan.token('body', function (req, res) { return JSON.stringify(req.body) })
 
@@ -13,28 +14,52 @@ app.use(cors())
 
 app.use(express.static('dist'))
 
-let persons = [
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
+if (process.argv.length<3) {
+  console.log('give password as argument')
+  process.exit(1)
+}
+
+const password = process.argv[2]
+
+const url =
+  `mongodb+srv://mhbagheri:${password}@fsophonebook.szfje3s.mongodb.net/phonebook?retryWrites=true&w=majority&appName=FSOPhonebook`
+
+mongoose.set('strictQuery',false)
+mongoose.connect(url)
+
+const contactSchema = new mongoose.Schema({
+  name: String,
+  number: String,
+})
+
+const Contact = mongoose.model('Contact', contactSchema)
+
+// if (process.argv.length === 3) {
+//   console.log('phonebook:')
+//   Contact.find({}).then(result => {
+//     result.forEach(contact => {
+//       console.log(`${contact.name} ${contact.number}`)
+//     })
+//     mongoose.connection.close()
+//   })
+// } else if (process.argv.length < 5) {
+//   console.log('Please provide both name and number as arguments')
+//   mongoose.connection.close()
+//   return
+// } else if (process.argv.length > 5) {
+//   console.log('Please provide name and number in quotes')
+//   mongoose.connection.close()
+//   return
+// } else if (process.argv.length === 5) {
+//   const person = new Contact({
+//       name: process.argv[3],
+//       number: process.argv[4]
+//   })
+//   person.save().then(result => {
+//   console.log(`added "${person.name}" number "${person.number}" to phonebook.`)
+//   mongoose.connection.close()
+//   })
+// }
   
 app.get('/info', (request, response) => {
   response.send(`<h1>Phonebook has ${persons.length} contacts!</h1><br>${new Date()}`)
@@ -89,7 +114,9 @@ app.delete('/api/persons/:id', (request, response) => {
 })
   
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Contact.find({}).then(result => {
+    response.json(notes)
+  })
 })
   
 const PORT = process.env.PORT || 3001
